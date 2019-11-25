@@ -1,25 +1,61 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect, Fragment } from "react";
+import Form from "./components/Form";
+import Axios from "axios";
+import Error from "./components/Error";
+import Song from "./components/Song";
+import Information from "./components/Information";
 
 function App() {
+  const [artist, setArtist] = useState("");
+  const [info, setInfo] = useState({});
+  const [lyric, setLyric] = useState([]);
+  const [error, setError] = useState(false);
+
+  const getLyrics = async search => {
+    const url = `https://api.lyrics.ovh/v1/${search.artist}/${search.song}`;
+    try {
+      const response = await Axios(url);
+      setArtist(search.artist);
+      setLyric(response.data.lyrics);
+      setError(false);
+    } catch (e) {
+      setError(true);
+    }
+  };
+
+  const getArtist = async artist => {
+    const url = `https://theaudiodb.com/api/v1/json/1/search.php?s=${artist}`;
+    try {
+      const response = await Axios(url);
+      console.log(response);
+      setInfo(response.data.artists[0]);
+    } catch (e) {
+      setError(true);
+    }
+  };
+
+  useEffect(() => {
+    if (lyric.length === 0) return;
+    getArtist(artist);
+  }, [artist, lyric]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Fragment>
+      <Form getLyrics={getLyrics} />
+      {error ? (
+        <Error setError={setError} message={"Lyrics not found"} />
+      ) : null}
+      <div className="container mt-5">
+        <div className="row">
+          <div className="col-md-6">
+            {Object.keys(info).length > 0 ? <Information info={info} /> : null}
+          </div>
+          <div className="col-md-6">
+            <Song lyric={lyric} />
+          </div>
+        </div>
+      </div>
+    </Fragment>
   );
 }
 
